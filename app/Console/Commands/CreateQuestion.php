@@ -16,6 +16,9 @@ class CreateQuestion extends BaseQuestionCommand
         self::ADD_QUESTION_SLUG => self::ADD_QUESTION_TXT
     ];
 
+    protected const CREATE_QUESTION_TXT = "Please enter the question.";
+    protected const CREATE_ANSWER_TXT = "Please enter the question's answer.";
+
     /**
      * The name and signature of the console command.
      *
@@ -81,15 +84,11 @@ class CreateQuestion extends BaseQuestionCommand
     private function createQuestionChoices()
     {
         // ask user for the questions
-        $question_text = $this->ask("Please enter the question.");
+        $question_text = $this->promptInputWithValidation(self::CREATE_QUESTION_TXT, 'Question');
+        $answer_text = $this->promptInputWithValidation(self::CREATE_ANSWER_TXT, 'Answer');
 
         // save question to db
-        $question = \App\Models\Question::create(['question' => $question_text]);
-
-        if ($question) {
-            // ask for question's answer
-            $answer_text = $this->ask("Please enter answer to the question.");
-            \App\Models\QuestionAnswer::create(["question_id" => $question->id, "answer" => $answer_text]);
-        }
+        $data = ['question' => $question_text, 'answer' => $answer_text];
+        \App\Models\Question::create($data);
     }
 }

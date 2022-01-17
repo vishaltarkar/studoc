@@ -4,21 +4,21 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-class ListQuestion extends Command
+class QuestionStats extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'question:list';
+    protected $signature = 'question:stats';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Get list of questions';
+    protected $description = 'Get Question Stats';
 
     /**
      * Create a new command instance.
@@ -37,12 +37,13 @@ class ListQuestion extends Command
      */
     public function handle()
     {
-        // display question list
-        $this->table(
-            ['#', 'Question', 'Answer'],
-            \App\Models\Question::all(['id', 'question', 'answer'])->toArray(),
-        );
+        $stats = \App\Models\Question::getStatsData();
         $this->newLine(1);
+        $this->info("The total questions : " . $stats['total']);
+        $this->info("Pecentage of questions that have an answer. : " . round($stats['attempt_perc'], 2) . "%");
+        $this->info("Pecentage of questions that have a correct answer. : " . round($stats['correct_perc'], 2). "%");
+        $this->newLine(1);
+
         $this->backCommand();
     }
 

@@ -39,6 +39,9 @@ class PracticeQuestion extends BaseQuestionCommand
         parent::__construct();
     }
 
+    protected const PRACTICE_WC_MSG = "Welcome to Practice";
+    protected const PRACTICE_WC_CMNT = "Here is the list of question with result";
+
     /**
      * Execute the console command.
      *
@@ -47,9 +50,9 @@ class PracticeQuestion extends BaseQuestionCommand
     public function handle()
     {
         // welcome message
-        $this->info('>> Welcome to Practice <<');
+        $this->info(self::PRACTICE_WC_MSG);
 
-        $this->comment("Here is the list of question with result");
+        $this->comment(self::PRACTICE_WC_CMNT);
 
         $this->questionStatusTable();
 
@@ -74,7 +77,7 @@ class PracticeQuestion extends BaseQuestionCommand
     private function questionStatusTable()
     {
         // generate table with status
-        $result = $this->getQuestionStatusList();
+        $result = \App\Models\Question::getPracticeData();
         $this->table(
             ['#', 'Question', 'Status'],
             $result['list']
@@ -125,12 +128,6 @@ class PracticeQuestion extends BaseQuestionCommand
         }
     }
 
-    // get list of question status
-    private function getQuestionStatusList()
-    {
-        return \App\Models\Question::getPracticeData();
-    }
-
     /**
      * Ask user to select id of the question to answer
      *
@@ -139,7 +136,7 @@ class PracticeQuestion extends BaseQuestionCommand
     private function selectQuestion()
     {
         $this->newLine(2);
-        $question_id = $this->ask("Select the #Id of the question to answer it.");
+        $question_id = $this->promptInputWithValidation("Select the #Id of the question to answer it", 'question_id', 20);
         $question = \App\Models\Question::with(['result'])->findOrFail($question_id);
         if ($question) {
             if (@$question->result && @$question->result->is_correct === 1) {
@@ -161,18 +158,17 @@ class PracticeQuestion extends BaseQuestionCommand
      */
     public function answeringQuestion($question) {
         $this->newLine(1);
-        $this->info("Here is the question :- ");
-        $user_answer = $this->ask($question->question);
+        $this->info("Please answer the below question.");
 
+        $user_answer = $this->promptInputWithValidation($question->question, 'Answer', 255);
         // blank or null answer
-        if (!$user_answer || $user_answer === '') {
-            $this->error("invalid entry! try again.");
-            $this->answeringQuestion($question);
-        }
-
+        // if (!$user_answer || $user_answer === '') {
+        //     $this->error("invalid entry! try again.");
+        //     $this->answeringQuestion($question);
+        // }
 
         // check answer
-        if (\Illuminate\Support\Str::lower($user_answer) == \Illuminate\Support\Str::lower($question->answer->answer)) {
+        if (\Illuminate\Support\Str::lower($user_answer) == \Illuminate\Support\Str::lower($question->answer)) {
             $this->comment('<Correct>');
             $is_correct = 1;
         } else {

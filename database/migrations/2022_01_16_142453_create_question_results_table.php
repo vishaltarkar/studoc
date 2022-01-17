@@ -15,6 +15,7 @@ class CreateQuestionResultsTable extends Migration
     {
         Schema::create('question_results', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->foreignId('question_id');
             $table->string('answer_value')->nullable();
             $table->boolean('is_correct')->default(0)->nullable();

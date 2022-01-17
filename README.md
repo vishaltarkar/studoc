@@ -1,4 +1,4 @@
-## About Quiz App
+## About Question & Answer App
 
 Quiz App is a console app, where users can create questions with its answer and list them out. Apart from that, he can do various activities like practicing those questions, getting stats & resetting all previous data from the console.
 
@@ -14,4 +14,14 @@ This application has pretty basic and abstract functionality for creating and an
 
 However, for example, Attaching multiple answers with the question to improve the reach of the question module & adding user_id with the result can improve the result module and make it more user-centric, and can produce more improved stats out of it. 
 
+#####Possbile Extension of App
+We can ask for user login details module after the `php artisan qanda:interactive` called, that way we can use the column of `user_id` to store user specific question answer result and manage the practice data for each user.
 
+I have not included `queston_answers` table considering that answer will be input text only, However, if we consider different type of question like multi choice etc. adding that will require a `question_types` table as well.
+
+We can also put a whole `QUIZ` layer on whole App. Where user can practice and access different quiz and practice the question for them. which make app more advance.
+
+
+######About Docker:
+
+I could't use docker and laravel sail with the app as there were some update issue going on with my current system at the time i write this code and there for I'm not able to install `WSL 2 backend` and there for docker cant be install as well. 

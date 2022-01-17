@@ -105,8 +105,23 @@ abstract class BaseQuestionCommand extends Command
     {
         if ($this->confirm(self::QUIT_TXT)) {
             $this->info(self::GOODBYE_TXT);
+            return 0;
         } else {
             $this->backCommand();
         }
+    }
+
+    protected function promptInputWithValidation($title, $label, $limit = 255)
+    {
+        // ask user for the questions
+        $val = trim($this->ask($title));
+        if ($val == '') {
+            $this->error('Error : '.$label.' can`t be blank.');
+            $val = $this->promptInputWithValidation($title, $label);
+        } else if (\Illuminate\Support\Str::length($val) > $limit) {
+            $this->error('Error : '.$label.' length should be less than '.$limit.' characters.');
+            $val = $this->promptInputWithValidation($title, $label);
+        }
+        return $val;
     }
 }

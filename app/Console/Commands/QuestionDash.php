@@ -124,48 +124,12 @@ class QuestionDash extends BaseQuestionCommand
                 break;
 
             case self::STATS_SLUG:
-                $this->stats();
+                $this->call('question:stats');
                 break;
 
             case self::RESET_SLUG:
-                $this->resetApp();
+                $this->call('question:reset-result');
                 break;
         }
-    }
-
-    // Get Question Stats
-    private function stats()
-    {
-        $stats = $this->getStatData();
-        $this->newLine(1);
-        $this->info('############################################################');
-        $this->info("The total questions : " . $stats['total']);
-        $this->info("Pecentage of questions that have an answer. : " . round($stats['attempt_perc'], 2) . "%");
-        $this->info("Pecentage of questions that have a correct answer. : " . round($stats['correct_perc'], 2). "%");
-        $this->info('############################################################');
-        $this->newLine(1);
-
-        $this->backCommand();
-    }
-    // Query Function for stats
-    private function getStatData()
-    {
-        return \App\Models\Question::getStatsData();
-    }
-
-    // reset App data
-    private function resetApp()
-    {
-        if ($this->confirm('Are you sure want to delete all questions and answers?')) {
-            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
-
-            \App\Models\Question::truncate(); // truncate questions
-            \App\Models\QuestionAnswer::truncate(); // truncate question's answer
-            \App\Models\QuestionResult::truncate(); // truncate results
-
-            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
-            $this->info("Questions and Answers has been reset.");
-        }
-        $this->backCommand();
     }
 }

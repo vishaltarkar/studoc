@@ -13,21 +13,20 @@ class Question extends Model
     public const CORRECT_TXT = 'Correct';
     public const INCORRECT_TXT = 'Incorrect';
 
-    protected $fillable = ['question'];
+    protected $fillable = ['question', 'answer'];
 
     # relationship
-    public function answer()
-    {
-        return $this->hasOne(QuestionAnswer::class);
-    }
-
     public function result()
     {
         return $this->hasOne(QuestionResult::class);
     }
 
     # custom function
-
+    /**
+     * get Data for the Practice Table
+     *
+     * @return array
+     */
     public static function getPracticeData()
     {
         $list = [];
@@ -62,6 +61,11 @@ class Question extends Model
         return ['list' => $list, 'percentage' => $percentage];
     }
 
+    /**
+     * Get Data for Stats
+     *
+     * @return array
+     */
     public static function getStatsData()
     {
         $correctCount = $attemptCount = 0;

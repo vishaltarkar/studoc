@@ -4,21 +4,21 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-class ListQuestion extends Command
+class ResetApp extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'question:list';
+    protected $signature = 'question:reset-result';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Get list of questions';
+    protected $description = 'Reset All the previously practice result for the questions.';
 
     /**
      * Create a new command instance.
@@ -30,6 +30,9 @@ class ListQuestion extends Command
         parent::__construct();
     }
 
+    protected const REST_TXT = "Are you sure want to delete all practice result?";
+    protected const REST_SUCCESS_MSG = "Practice result has been reset.";
+
     /**
      * Execute the console command.
      *
@@ -37,12 +40,14 @@ class ListQuestion extends Command
      */
     public function handle()
     {
-        // display question list
-        $this->table(
-            ['#', 'Question', 'Answer'],
-            \App\Models\Question::all(['id', 'question', 'answer'])->toArray(),
-        );
-        $this->newLine(1);
+        if ($this->confirm(self::REST_TXT)) {
+            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+
+            \App\Models\QuestionResult::truncate(); // truncate results
+
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+            $this->info(self::REST_SUCCESS_MSG);
+        }
         $this->backCommand();
     }
 

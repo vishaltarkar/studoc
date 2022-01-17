@@ -9,7 +9,7 @@ class QuestionResult extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['question_id', 'answer_value', 'is_correct'];
+    protected $fillable = ['user_id', 'question_id', 'answer_value', 'is_correct'];
 
     #relationship
     public function question()
