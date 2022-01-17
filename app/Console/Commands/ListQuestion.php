@@ -42,9 +42,7 @@ class ListQuestion extends Command
             ['#', 'Question', 'Answer'],
             $this->getQuestionWithAnsList()
         );
-
-        $this->info('################################################################');
-
+        $this->newLine(1);
         $this->call('qanda:interactive');
 
     }

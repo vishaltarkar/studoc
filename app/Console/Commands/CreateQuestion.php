@@ -2,10 +2,20 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
+use App\Console\BaseQuestionCommand;
 
-class CreateQuestion extends Command
+class CreateQuestion extends BaseQuestionCommand
 {
+
+    protected const ADD_QUESTION_SLUG = 'add';
+    protected const ADD_QUESTION_TXT = "Add question";
+
+    protected const SUB_MENU_TITLE_TXT = "Create Question";
+
+    protected const SUB_MENU = [
+        self::ADD_QUESTION_SLUG => self::ADD_QUESTION_TXT
+    ];
+
     /**
      * The name and signature of the console command.
      *
@@ -37,37 +47,35 @@ class CreateQuestion extends Command
      */
     public function handle()
     {
-        $choice = $this->choice(">>> Create Question: <<<", $this->initialChoices());
-
-        switch ($choice) {
-            case 'add':
-                $this->createQuestionChoices();
-                break;
-
-            case 'back':
-                $this->call('qanda:interactive');
-                break;
-
-            case 'exit':
-                $this->info("Good Bye!");
-                return 0;
-                break;
-
-            default:
-                $this->error("Error!");
-                break;
-        }
-
+        parent::handle();
         $this->call('question:create');
     }
 
-    private function initialChoices()
+    /**
+     * @return string
+     */
+    protected function menuTitle(): string
     {
-        return [
-            "add" => "Add question",
-            "back" => "Go back",
-            "exit" => "exit"
-        ];
+        return self::SUB_MENU_TITLE_TXT;
+    }
+
+    protected function backCommand()
+    {
+        $this->call('qanda:interactive');
+    }
+
+    protected function menuChoices()
+    {
+        return self::SUB_MENU;
+    }
+
+    protected function handleMenuChoices(string $choice)
+    {
+        switch ($choice) {
+            case self::ADD_QUESTION_SLUG:
+                $this->createQuestionChoices();
+                break;
+        }
     }
 
     private function createQuestionChoices()
@@ -81,7 +89,7 @@ class CreateQuestion extends Command
         if ($question) {
             // ask for question's answer
             $answer_text = $this->ask("Please enter answer to the question.");
-            $answer = \App\Models\QuestionAnswer::create(["question_id" => $question->id, "answer" => $answer_text]);
+            \App\Models\QuestionAnswer::create(["question_id" => $question->id, "answer" => $answer_text]);
         }
     }
 }

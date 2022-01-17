@@ -2,10 +2,19 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
+use App\Console\BaseQuestionCommand;
 
-class PracticeQuestion extends Command
+class PracticeQuestion extends BaseQuestionCommand
 {
+    protected const SUB_MENU_TITLE_TXT = "Please select any one of the option below";
+
+    protected const NEXT_SLUG = "next";
+    protected const NEXT_TXT = "Select new question to answer";
+
+    protected const SUB_MENU = [
+        self::NEXT_SLUG => self::NEXT_TXT
+    ];
+
     /**
      * The name and signature of the console command.
      *
@@ -42,11 +51,15 @@ class PracticeQuestion extends Command
 
         $this->comment("Here is the list of question with result");
 
-        // $this->startPractice();
-        # confirmation before starting the practice
-        // $questions = \App\Models\Question::with(['answer'])->get();
         $this->questionStatusTable();
 
+        parent::handle();
+
+    }
+
+    protected function backCommand()
+    {
+        $this->call('qanda:interactive');
     }
 
     private function questionStatusTable()
@@ -64,78 +77,70 @@ class PracticeQuestion extends Command
         $this->newLine();
 
         // select the question to answer
-        $question_id = $this->selectQuestion();
+        $question = $this->selectQuestion();
 
-        $this->answeringQuestion($question_id);
+        $this->answeringQuestion($question);
 
-        $this->practiceChoices();
+        // $this->practiceChoices();
     }
 
-    private function practiceChoices()
+    /**
+     * @return string
+     */
+    protected function menuTitle(): string
     {
-        $this->newLine();
-        $choice = $this->choice(">> Please select any one of the option below << ", [
-            "next" => "Select new question to answer",
-            "back" => "Go back",
-            "exit" => "Exit"
-        ]);
+        return self::SUB_MENU_TITLE_TXT;
+    }
 
+    protected function menuChoices()
+    {
+        return self::SUB_MENU;
+    }
+
+    protected function handleMenuChoices(string $choice)
+    {
         switch ($choice) {
-            case 'next':
+            case self::NEXT_SLUG:
                 $this->call('question:practice');
                 break;
-
-            case 'back':
-                $this->call('qanda:interactive');
-                break;
-
-            case 'exit':
-                $this->info("Good Bye!");
-                return 0;
-                break;
-
-            default:
-                $this->error('Error Msg : Unknown choice');
-                $this->call('qanda:practice');
-                break;
         }
-
-        $this->newLine();
     }
+
+    // private function practiceChoices()
+    // {
+    //     $this->newLine();
+    //     $choice = $this->choice(">> Please select any one of the option below << ", [
+    //         "next" => "Select new question to answer",
+    //         "back" => "Go back",
+    //         "exit" => "Exit"
+    //     ]);
+
+    //     switch ($choice) {
+    //         case 'next':
+    //             $this->call('question:practice');
+    //             break;
+
+    //         case 'back':
+    //             $this->call('qanda:interactive');
+    //             break;
+
+    //         case 'exit':
+    //             $this->info("Good Bye!");
+    //             return 0;
+    //             break;
+
+    //         default:
+    //             $this->error('Error Msg : Unknown choice');
+    //             $this->call('qanda:practice');
+    //             break;
+    //     }
+
+    //     $this->newLine();
+    // }
 
     private function getQuestionStatusList()
     {
-        $list = [];
-        $correctCount = 0;
-        $questions = \App\Models\Question::with(['result'])->get();
-        $questionCount = sizeof($questions);
-        if ($questionCount > 0) {
-            foreach ($questions as $key => $question) {
-
-                $resultStr = 'Not answered';
-                if (@$question->result) {
-                    if ($question->result->is_correct === 1) {
-                        $resultStr = 'Correct';
-                        $correctCount++;
-                    } else {
-                        $resultStr = 'Incorrect';
-                    }
-                }
-
-                $list[] = [
-                    '#Id' => $question->id,
-                    'question' => $question->question,
-                    'result' => $resultStr
-                ];
-            }
-        }
-
-        // process corret to %
-        $percentage = '0';
-        if ($correctCount > 0) {
-            $percentage = ($correctCount/$questionCount) * 100;
-        }
-        return ['list' => $list, 'percentage' => $percentage];
+        return \App\Models\Question::getPracticeData();
     }
 
     private function selectQuestion()
@@ -145,10 +150,10 @@ class PracticeQuestion extends Command
         $question = \App\Models\Question::with(['result'])->findOrFail($question_id);
         if ($question) {
             if (!$question->result || $question->result->is_correct === 1) {
-                return $question;
-            } else {
                 $this->info('Question is already answered.');
                 $this->selectQuestion();
+            } else {
+                return $question;
             }
         } else {
             $this->error('Unknown Question choice.');
