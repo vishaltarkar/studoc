@@ -57,13 +57,23 @@ class PracticeQuestion extends BaseQuestionCommand
 
     }
 
+    /**
+     * Back command
+     *
+     */
     protected function backCommand()
     {
         $this->call('qanda:interactive');
     }
 
+    /**
+     * Generate Table to display Question & their Status
+     *
+     * @return void
+     */
     private function questionStatusTable()
     {
+        // generate table with status
         $result = $this->getQuestionStatusList();
         $this->table(
             ['#', 'Question', 'Status'],
@@ -71,20 +81,18 @@ class PracticeQuestion extends BaseQuestionCommand
         );
 
         $this->newLine();
-
-        $this->info('Completion in percentage ' . round($result['percentage'], 2) . '%');
-
+        $this->info('Completion in percentage ' . round($result['percentage'], 2) . '%'); // stats
         $this->newLine();
 
         // select the question to answer
         $question = $this->selectQuestion();
 
+        // get answer and store it in DB
         $this->answeringQuestion($question);
-
-        // $this->practiceChoices();
     }
 
     /**
+     * Title of Menu
      * @return string
      */
     protected function menuTitle(): string
@@ -92,11 +100,22 @@ class PracticeQuestion extends BaseQuestionCommand
         return self::SUB_MENU_TITLE_TXT;
     }
 
+    /**
+     * Array of Menu Choices
+     *
+     * @return array
+     */
     protected function menuChoices()
     {
         return self::SUB_MENU;
     }
 
+    /**
+     * Handle Menu for practice question
+     *
+     * @param string $choice
+     * @return void
+     */
     protected function handleMenuChoices(string $choice)
     {
         switch ($choice) {
@@ -106,60 +125,40 @@ class PracticeQuestion extends BaseQuestionCommand
         }
     }
 
-    // private function practiceChoices()
-    // {
-    //     $this->newLine();
-    //     $choice = $this->choice(">> Please select any one of the option below << ", [
-    //         "next" => "Select new question to answer",
-    //         "back" => "Go back",
-    //         "exit" => "Exit"
-    //     ]);
-
-    //     switch ($choice) {
-    //         case 'next':
-    //             $this->call('question:practice');
-    //             break;
-
-    //         case 'back':
-    //             $this->call('qanda:interactive');
-    //             break;
-
-    //         case 'exit':
-    //             $this->info("Good Bye!");
-    //             return 0;
-    //             break;
-
-    //         default:
-    //             $this->error('Error Msg : Unknown choice');
-    //             $this->call('qanda:practice');
-    //             break;
-    //     }
-
-    //     $this->newLine();
-    // }
-
+    // get list of question status
     private function getQuestionStatusList()
     {
         return \App\Models\Question::getPracticeData();
     }
 
+    /**
+     * Ask user to select id of the question to answer
+     *
+     * @return object|void
+     */
     private function selectQuestion()
     {
         $this->newLine(2);
         $question_id = $this->ask("Select the #Id of the question to answer it.");
         $question = \App\Models\Question::with(['result'])->findOrFail($question_id);
         if ($question) {
-            if (!$question->result || $question->result->is_correct === 1) {
+            if (@$question->result && @$question->result->is_correct === 1) {
                 $this->info('Question is already answered.');
                 $this->selectQuestion();
-            } else {
-                return $question;
             }
+            return $question;
         } else {
             $this->error('Unknown Question choice.');
+            $this->selectQuestion();
         }
     }
 
+    /**
+     * Check if answer is correct or not and store it in DB
+     *
+     * @param object $question
+     * @return void
+     */
     public function answeringQuestion($question) {
         $this->newLine(1);
         $this->info("Here is the question :- ");

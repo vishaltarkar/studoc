@@ -51,17 +51,27 @@ abstract class BaseQuestionCommand extends Command
      *
      * @return array
      */
-    protected function allChoices()
+    protected function allChoices() :array
     {
         return array_merge($this->menuChoices(), $this->baseChoices());
     }
 
-
-    private function baseChoices()
+    /**
+     * a function to get base choice for app
+     *
+     * @return array
+     */
+    private function baseChoices() :array
     {
         return self::BASE_CHOICES;
     }
 
+    /**
+     * Handle base choice of application
+     *
+     * @param string|null $option
+     * @return void
+     */
     protected function handleBaseChoices(string $option = null)
     {
         switch ($option) {
@@ -76,6 +86,12 @@ abstract class BaseQuestionCommand extends Command
         }
     }
 
+    /**
+     * handle all choices of base as well as from other menu
+     *
+     * @param string $choice
+     * @return void
+     */
     protected function handleAllChoice(string $choice)
     {
         $this->handleBaseChoices($choice);
@@ -83,6 +99,7 @@ abstract class BaseQuestionCommand extends Command
     }
 
     /**
+     * Prompt console to ask user to exit or not
      */
     private function confirmQuit()
     {
