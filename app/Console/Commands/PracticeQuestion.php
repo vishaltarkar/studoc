@@ -77,14 +77,14 @@ class PracticeQuestion extends BaseQuestionCommand
     private function questionStatusTable()
     {
         // generate table with status
-        $result = \App\Models\Question::getPracticeData();
+        $result = \App\Models\Question::getResults();
         $this->table(
             ['#', 'Question', 'Status'],
             $result['list']
         );
 
         $this->newLine();
-        $this->info('Completion in percentage ' . round($result['percentage'], 2) . '%'); // stats
+        $this->info('Completion in percentage ' . $result['correct_perc'] . '%'); // stats
         $this->newLine();
 
         // select the question to answer
@@ -137,7 +137,7 @@ class PracticeQuestion extends BaseQuestionCommand
     {
         $this->newLine(2);
         $question_id = $this->promptInputWithValidation("Select the #Id of the question to answer it", 'question_id', 20);
-        $question = \App\Models\Question::with(['result'])->findOrFail($question_id);
+        $question = \App\Models\Question::with(['result'])->find($question_id);
         if ($question) {
             if (@$question->result && @$question->result->is_correct === 1) {
                 $this->info('Question is already answered.');
@@ -157,33 +157,33 @@ class PracticeQuestion extends BaseQuestionCommand
      * @return void
      */
     public function answeringQuestion($question) {
-        $this->newLine(1);
-        $this->info("Please answer the below question.");
+        try {
+            $this->newLine(1);
+            $this->info("Please answer the below question.");
 
-        $user_answer = $this->promptInputWithValidation($question->question, 'Answer', 255);
-        // blank or null answer
-        // if (!$user_answer || $user_answer === '') {
-        //     $this->error("invalid entry! try again.");
-        //     $this->answeringQuestion($question);
-        // }
+            $user_answer = $this->promptInputWithValidation($question->question, 'Answer', 255);
 
-        // check answer
-        if (\Illuminate\Support\Str::lower($user_answer) == \Illuminate\Support\Str::lower($question->answer)) {
-            $this->comment('<Correct>');
-            $is_correct = 1;
-        } else {
-            $this->error('<Incorrect>');
-            $is_correct = 0;
+            // check answer
+            if (\Illuminate\Support\Str::lower($user_answer) == \Illuminate\Support\Str::lower($question->answer)) {
+                $this->comment('<Correct>');
+                $is_correct = 1;
+            } else {
+                $this->error('<Incorrect>');
+                $is_correct = 0;
+            }
+
+            // store user answer
+            \App\Models\QuestionResult::updateOrCreate([
+                'question_id' => $question->id,
+            ], [
+                'answer_value' => $user_answer,
+                'is_correct' => $is_correct
+            ]);
+
+            $this->newLine(1);
+        } catch (\Exception $e) {
+            $this->error("Something went wrong, Please try again.");
+            $this->questionStatusTable();
         }
-
-        // store user answer
-        \App\Models\QuestionResult::updateOrCreate([
-            'question_id' => $question->id,
-        ], [
-            'answer_value' => $user_answer,
-            'is_correct' => $is_correct
-        ]);
-
-        $this->newLine(1);
     }
 }

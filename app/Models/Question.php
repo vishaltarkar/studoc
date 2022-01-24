@@ -23,20 +23,21 @@ class Question extends Model
 
     # custom function
     /**
-     * get Data for the Practice Table
+     * Get Question result data
      *
-     * @return array
+     * @return void
      */
-    public static function getPracticeData()
+    public static function getResults()
     {
         $list = [];
-        $correctCount = 0;
+        $correctCount = $attemptCount = 0;
         $questions = Question::with(['result'])->get();
         $questionCount = sizeof($questions);
         if ($questionCount > 0) {
             foreach ($questions as $question) {
                 $resultStr = self::NOTANSWERED_TXT;
                 if (@$question->result) {
+                    $attemptCount++;
                     if ($question->result->is_correct === 1) {
                         $resultStr = self::CORRECT_TXT;
                         $correctCount++;
@@ -58,36 +59,6 @@ class Question extends Model
         if ($correctCount > 0) {
             $percentage = ($correctCount/$questionCount) * 100;
         }
-        return ['list' => $list, 'percentage' => $percentage];
-    }
-
-    /**
-     * Get Data for Stats
-     *
-     * @return array
-     */
-    public static function getStatsData()
-    {
-        $correctCount = $attemptCount = 0;
-        $questions = \App\Models\Question::with(['result'])->get();
-        $questionCount = sizeof($questions);
-        if ($questionCount > 0) {
-            foreach ($questions as $key => $question) {
-
-                if (@$question->result) {
-                    $attemptCount++;
-                    if ($question->result->is_correct === 1) {
-                        $correctCount++;
-                    }
-                }
-            }
-        }
-
-        // corret answer  %
-        $correctPercent = '0';
-        if ($correctCount > 0) {
-            $correctPercent = ($correctCount/$questionCount) * 100;
-        }
 
         // attempt question %
         $attemptPercentage = '0';
@@ -96,9 +67,10 @@ class Question extends Model
         }
 
         return [
+            'list' => $list,
             'total' => $questionCount,
-            'correct_perc' => $correctPercent,
-            'attempt_perc' => $attemptPercentage
+            'attempt_perc' => round($attemptPercentage, 2),
+            'correct_perc' => round($percentage, 2)
         ];
     }
 }

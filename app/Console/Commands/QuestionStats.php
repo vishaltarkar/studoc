@@ -37,11 +37,11 @@ class QuestionStats extends Command
      */
     public function handle()
     {
-        $stats = \App\Models\Question::getStatsData();
+        $stats = \App\Models\Question::getResults();
         $this->newLine(1);
         $this->info("The total questions : " . $stats['total']);
-        $this->info("Pecentage of questions that have an answer. : " . round($stats['attempt_perc'], 2) . "%");
-        $this->info("Pecentage of questions that have a correct answer. : " . round($stats['correct_perc'], 2). "%");
+        $this->info("Pecentage of questions that have an answer. : " . $stats['attempt_perc'] . "%");
+        $this->info("Pecentage of questions that have a correct answer. : " . $stats['correct_perc'] . "%");
         $this->newLine(1);
 
         $this->backCommand();

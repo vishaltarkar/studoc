@@ -16,4 +16,5 @@ class QuestionResult extends Model
     {
         return $this->belongsTo(Question::class);
     }
+
 }

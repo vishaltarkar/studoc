@@ -6,7 +6,7 @@
 
 namespace App\Console\Commands;
 
-use App\Console\BaseQuestionCommand;
+use \App\Console\BaseQuestionCommand;
 
 class QuestionDash extends BaseQuestionCommand
 {
