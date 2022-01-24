@@ -25,13 +25,22 @@ class Question extends Model
     /**
      * Get Question result data
      *
-     * @return void
+     * @return array
      */
-    public static function getResults()
+    public static function getResults($user_id = null)
     {
         $list = [];
         $correctCount = $attemptCount = 0;
-        $questions = Question::with(['result'])->get();
+
+        $questions = Question::with(['result']);
+
+        if ($user_id) {
+            $questions->whereHas('result', function ($q) use ($user_id) {
+                $q->OfUser('user_id', $user_id);
+            });
+        }
+        $questions = $questions->get();
+
         $questionCount = sizeof($questions);
         if ($questionCount > 0) {
             foreach ($questions as $question) {
@@ -69,8 +78,9 @@ class Question extends Model
         return [
             'list' => $list,
             'total' => $questionCount,
-            'attempt_perc' => round($attemptPercentage, 2),
-            'correct_perc' => round($percentage, 2)
+            'attempt_perc' => round($attemptPercentage, 0, PHP_ROUND_HALF_DOWN),
+            'correct_perc' => round($percentage, 0, PHP_ROUND_HALF_DOWN),
+            'correct_count' => $correctCount
         ];
     }
 }

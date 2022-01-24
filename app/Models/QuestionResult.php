@@ -17,4 +17,9 @@ class QuestionResult extends Model
         return $this->belongsTo(Question::class);
     }
 
+    #scope
+    public function scopeOfUserId($query, $user_id)
+    {
+        return $query->where('user_id', $user_id);
+    }
 }

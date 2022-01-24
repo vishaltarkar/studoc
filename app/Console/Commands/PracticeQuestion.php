@@ -76,8 +76,15 @@ class PracticeQuestion extends BaseQuestionCommand
      */
     private function questionStatusTable()
     {
-        // generate table with status
+        // get result
         $result = \App\Models\Question::getResults();
+
+
+        $bar = $this->output->createProgressBar($result['total']);
+        $bar->advance($result['correct_count']);
+        $this->newLine();
+
+        // generate table with status
         $this->table(
             ['#', 'Question', 'Status'],
             $result['list']
