@@ -138,22 +138,23 @@ class PracticeQuestion extends BaseQuestionCommand
     /**
      * Ask user to select id of the question to answer
      *
-     * @return object|void
+     * @return object
      */
     private function selectQuestion()
     {
         $this->newLine(2);
         $question_id = $this->promptInputWithValidation("Select the #Id of the question to answer it", 'question_id', 20);
+
         $question = \App\Models\Question::with(['result'])->find($question_id);
         if ($question) {
             if (@$question->result && @$question->result->is_correct === 1) {
                 $this->info('Question is already answered.');
-                $this->selectQuestion();
+                $question = $this->selectQuestion();
             }
             return $question;
         } else {
             $this->error('Unknown Question choice.');
-            $this->selectQuestion();
+            return $this->selectQuestion();
         }
     }
 
@@ -167,8 +168,8 @@ class PracticeQuestion extends BaseQuestionCommand
         try {
             $this->newLine(1);
             $this->info("Please answer the below question.");
-
             $user_answer = $this->promptInputWithValidation($question->question, 'Answer', 255);
+            $this->newLine(1);
 
             // check answer
             if (\Illuminate\Support\Str::lower($user_answer) == \Illuminate\Support\Str::lower($question->answer)) {

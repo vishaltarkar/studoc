@@ -43,6 +43,9 @@ class Question extends Model
 
         $questionCount = sizeof($questions);
         if ($questionCount > 0) {
+
+            // dd(collect($questions)->whereNull('result')->count());
+
             foreach ($questions as $question) {
                 $resultStr = self::NOTANSWERED_TXT;
                 if (@$question->result) {

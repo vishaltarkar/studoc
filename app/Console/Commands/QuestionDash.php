@@ -19,6 +19,9 @@ class QuestionDash extends BaseQuestionCommand
     const CREATE_QUESTION_TXT = 'Create a question';
     const CREATE_QUESTION_SLUG = 'create';
 
+    const DELETE_QUESTION_TXT = 'Delete a question';
+    const DELETE_QUESTION_SLUG = 'delete';
+
     const LIST_QUESTION_TXT = 'List Questions';
     const LIST_QUESTION_SLUG = 'list';
 
@@ -34,6 +37,7 @@ class QuestionDash extends BaseQuestionCommand
     // menu array
     const MAIN_MENU = [
         self::CREATE_QUESTION_SLUG => self::CREATE_QUESTION_TXT,
+        self::DELETE_QUESTION_SLUG => self::DELETE_QUESTION_TXT,
         self::LIST_QUESTION_SLUG => self::LIST_QUESTION_TXT,
         self::PRACTICE_QUESTION_SLUG => self::PRACTICE_QUESTION_TXT,
         self::STATS_SLUG => self::STATS_TXT,
@@ -110,9 +114,16 @@ class QuestionDash extends BaseQuestionCommand
      */
     protected function handleMenuChoices(string $choice)
     {
+
+        // $this->call('question:'.$choice);
+
         switch ($choice) {
             case self::CREATE_QUESTION_SLUG:
                 $this->call('question:create');
+                break;
+
+            case self::DELETE_QUESTION_SLUG:
+                $this->call('question:delete');
                 break;
 
             case self::LIST_QUESTION_SLUG:
