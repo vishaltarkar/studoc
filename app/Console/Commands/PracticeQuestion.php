@@ -11,6 +11,8 @@ class PracticeQuestion extends BaseQuestionCommand
     protected const NEXT_SLUG = "next";
     protected const NEXT_TXT = "Select new question to answer";
 
+    protected const ANS_QUESTION_INSTRUCTION_TXT = "[ Please answer the below question. ]";
+
     protected const SUB_MENU = [
         self::NEXT_SLUG => self::NEXT_TXT
     ];
@@ -79,7 +81,6 @@ class PracticeQuestion extends BaseQuestionCommand
         // get result
         $result = \App\Models\Question::getResults();
 
-
         $bar = $this->output->createProgressBar($result['total']);
         $bar->advance($result['correct_count']);
         $this->newLine();
@@ -145,7 +146,7 @@ class PracticeQuestion extends BaseQuestionCommand
         $this->newLine(2);
         $question_id = $this->promptInputWithValidation("Select the #Id of the question to answer it", 'question_id', 20);
 
-        $question = \App\Models\Question::with(['result'])->find($question_id);
+        $question = \App\Models\Question::with(['options', 'result'])->find($question_id);
         if ($question) {
             if (@$question->result && @$question->result->is_correct === 1) {
                 $this->info('Question is already answered.');
@@ -167,12 +168,29 @@ class PracticeQuestion extends BaseQuestionCommand
     public function answeringQuestion($question) {
         try {
             $this->newLine(1);
-            $this->info("Please answer the below question.");
-            $user_answer = $this->promptInputWithValidation($question->question, 'Answer', 255);
+            $this->info(self::ANS_QUESTION_INSTRUCTION_TXT);
+            $this->info($question->question);
+
+            // display ans options
+            $option_list = $question->options()->select('id', 'option_txt')->get();
+            $this->table(
+                ['#Id', 'Option'],
+                $option_list,
+            );
+            $this->newLine(1);
+            $user_answer = $this->promptInputWithValidation("Please select #Id from above options table as answer", 'Answer', 20);
+
+            // validate answer text
+            $question_option = $question->options()->find($user_answer);
+            // $question_option = \App\Models\QuestionOption::where('question_id', $que)->where('id', $user_answer);
+            if (!$question_option) {
+                $this->error("Unknown option choice.");
+                return $this->answeringQuestion($question); // retry on invalid entry
+            }
             $this->newLine(1);
 
             // check answer
-            if (\Illuminate\Support\Str::lower($user_answer) == \Illuminate\Support\Str::lower($question->answer)) {
+            if ($user_answer == $question->answer_id) {
                 $this->comment('<Correct>');
                 $is_correct = 1;
             } else {
@@ -184,13 +202,13 @@ class PracticeQuestion extends BaseQuestionCommand
             \App\Models\QuestionResult::updateOrCreate([
                 'question_id' => $question->id,
             ], [
-                'answer_value' => $user_answer,
+                'answer_id' => $user_answer,
                 'is_correct' => $is_correct
             ]);
 
             $this->newLine(1);
         } catch (\Exception $e) {
-            $this->error("Something went wrong, Please try again.");
+            $this->error("Something went wrong, Please try again. <<" . $e->getMessage());
             $this->questionStatusTable();
         }
     }

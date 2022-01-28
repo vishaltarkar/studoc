@@ -37,10 +37,15 @@ class ListQuestion extends Command
      */
     public function handle()
     {
+        $questions = \App\Models\Question::with(['answer'])->get(); // get all questions
+        // customize the object for the table
+        $question_list = collect($questions)->map(function ($question){
+            return ['id' => $question->id, 'question' => $question->question, 'answer' => $question->answer->option_txt];
+        });
         // display question list
         $this->table(
             ['#', 'Question', 'Answer'],
-            \App\Models\Question::all(['id', 'question', 'answer'])->toArray(),
+            $question_list,
         );
         $this->newLine(1);
         $this->backCommand();

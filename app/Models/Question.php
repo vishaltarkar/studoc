@@ -13,7 +13,7 @@ class Question extends Model
     public const CORRECT_TXT = 'Correct';
     public const INCORRECT_TXT = 'Incorrect';
 
-    protected $fillable = ['question', 'answer'];
+    protected $fillable = ['question', 'answer_id'];
 
     # relationship
     public function result()
@@ -21,69 +21,72 @@ class Question extends Model
         return $this->hasOne(QuestionResult::class);
     }
 
+    # get answer of the question
+    public function answer()
+    {
+        return $this->belongsTo(QuestionOption::class);
+    }
+
+    # get answer options of the questions
+    public function options()
+    {
+        return $this->hasMany(QuestionOption::class)->inRandomOrder();
+    }
+
     # custom function
     /**
      * Get Question result data
      *
-     * @return array
+     * @return array {
+     *    'list': array {'id' :int, 'question':string, 'result':string},
+     *    'total':int,
+     *    'attempt_perc':float,
+     *    'correct_perc':float,
+     *    'correct_count':int,
+     * }
      */
     public static function getResults($user_id = null)
     {
-        $list = [];
-        $correctCount = $attemptCount = 0;
-
-        $questions = Question::with(['result']);
-
-        if ($user_id) {
-            $questions->whereHas('result', function ($q) use ($user_id) {
-                $q->OfUser('user_id', $user_id);
-            });
-        }
-        $questions = $questions->get();
-
-        $questionCount = sizeof($questions);
-        if ($questionCount > 0) {
-
-            // dd(collect($questions)->whereNull('result')->count());
-
-            foreach ($questions as $question) {
-                $resultStr = self::NOTANSWERED_TXT;
-                if (@$question->result) {
-                    $attemptCount++;
-                    if ($question->result->is_correct === 1) {
-                        $resultStr = self::CORRECT_TXT;
-                        $correctCount++;
-                    } else {
-                        $resultStr = self::INCORRECT_TXT;
-                    }
+        $correct_count = $attempt_count = 0;
+        $questions = Question::with(['result'])->get();
+        $list = collect($questions)->map(function ($question) use ($correct_count, $attempt_count) {
+            $resultStr = self::NOTANSWERED_TXT;
+            if (@$question->result) {
+                $attempt_count++;
+                if ($question->result->is_correct === 1) {
+                    $resultStr = self::CORRECT_TXT;
+                    $correct_count++;
+                } else {
+                    $resultStr = self::INCORRECT_TXT;
                 }
-
-                $list[] = [
-                    '#Id' => $question->id,
-                    'question' => $question->question,
-                    'result' => $resultStr
-                ];
             }
-        }
+
+            return [
+                '#Id' => $question->id,
+                'question' => $question->question,
+                'result' => $resultStr
+            ];
+        });
+        $question_count = sizeof($questions); // get total no. of questions
 
         // process corret to %
         $percentage = '0';
-        if ($correctCount > 0) {
-            $percentage = ($correctCount/$questionCount) * 100;
+        if ($correct_count > 0) {
+            $percentage = ($correct_count/$question_count) * 100;
         }
 
         // attempt question %
-        $attemptPercentage = '0';
-        if ($attemptCount > 0) {
-            $attemptPercentage = ($attemptCount/$questionCount) * 100;
+        $attempt_percentage = '0';
+        if ($attempt_count > 0) {
+            $attempt_percentage = ($attempt_count/$question_count) * 100;
         }
 
         return [
             'list' => $list,
-            'total' => $questionCount,
-            'attempt_perc' => round($attemptPercentage, 0, PHP_ROUND_HALF_DOWN),
+            'total' => $question_count,
+            'attempt_perc' => round($attempt_percentage, 0, PHP_ROUND_HALF_DOWN),
             'correct_perc' => round($percentage, 0, PHP_ROUND_HALF_DOWN),
-            'correct_count' => $correctCount
+            'correct_count' => $correct_count
         ];
     }
 }

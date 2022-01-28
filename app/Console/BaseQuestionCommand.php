@@ -105,6 +105,7 @@ abstract class BaseQuestionCommand extends Command
     {
         if ($this->confirm(self::QUIT_TXT)) {
             $this->info(self::GOODBYE_TXT);
+            return 1;
         } else {
             $this->backCommand();
         }
