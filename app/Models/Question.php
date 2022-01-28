@@ -47,15 +47,16 @@ class Question extends Model
      */
     public static function getResults($user_id = null)
     {
-        $correct_count = $attempt_count = 0;
+        // $correct_count = $attempt_count = 0;
         $questions = Question::with(['result'])->get();
-        $list = collect($questions)->map(function ($question) use ($correct_count, $attempt_count) {
+
+        $list = collect($questions)->map(function ($question) {
             $resultStr = self::NOTANSWERED_TXT;
             if (@$question->result) {
-                $attempt_count++;
+                // $attempt_count++;
                 if ($question->result->is_correct === 1) {
                     $resultStr = self::CORRECT_TXT;
-                    $correct_count++;
+                    // $correct_count++;
                 } else {
                     $resultStr = self::INCORRECT_TXT;
                 }
@@ -67,7 +68,10 @@ class Question extends Model
                 'result' => $resultStr
             ];
         });
+
         $question_count = sizeof($questions); // get total no. of questions
+        $attempt_count = collect($questions)->whereNull('result')->count(); // get attempt question count
+        $correct_count = collect($list)->where('result', self::CORRECT_TXT)->count(); // get correct question count
 
         // process corret to %
         $percentage = '0';
@@ -84,9 +88,10 @@ class Question extends Model
         return [
             'list' => $list,
             'total' => $question_count,
+            'correct_count' => $correct_count,
             'attempt_perc' => round($attempt_percentage, 0, PHP_ROUND_HALF_DOWN),
             'correct_perc' => round($percentage, 0, PHP_ROUND_HALF_DOWN),
-            'correct_count' => $correct_count
+
         ];
     }
 }
