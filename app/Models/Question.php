@@ -38,7 +38,7 @@ class Question extends Model
      * Get Question result data
      *
      * @return array {
-     *    'list': array {'id' :int, 'question':string, 'result':string},
+     *    'list': Illuminate\Support\Collection {'id' :int, 'question':string, 'result':string},
      *    'total':int,
      *    'attempt_perc':float,
      *    'correct_perc':float,
@@ -47,16 +47,13 @@ class Question extends Model
      */
     public static function getResults($user_id = null)
     {
-        // $correct_count = $attempt_count = 0;
         $questions = Question::with(['result'])->get();
 
         $list = collect($questions)->map(function ($question) {
             $resultStr = self::NOTANSWERED_TXT;
             if (@$question->result) {
-                // $attempt_count++;
                 if ($question->result->is_correct === 1) {
                     $resultStr = self::CORRECT_TXT;
-                    // $correct_count++;
                 } else {
                     $resultStr = self::INCORRECT_TXT;
                 }
@@ -70,7 +67,7 @@ class Question extends Model
         });
 
         $question_count = sizeof($questions); // get total no. of questions
-        $attempt_count = collect($questions)->whereNull('result')->count(); // get attempt question count
+        $attempt_count = collect($questions)->whereNotNull('result')->count(); // get attempt question count
         $correct_count = collect($list)->where('result', self::CORRECT_TXT)->count(); // get correct question count
 
         // process corret to %
@@ -91,7 +88,6 @@ class Question extends Model
             'correct_count' => $correct_count,
             'attempt_perc' => round($attempt_percentage, 0, PHP_ROUND_HALF_DOWN),
             'correct_perc' => round($percentage, 0, PHP_ROUND_HALF_DOWN),
-
         ];
     }
 }

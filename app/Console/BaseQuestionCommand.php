@@ -12,14 +12,14 @@ abstract class BaseQuestionCommand extends Command
     }
 
     // Back choice values
-    protected const BACK_SLUG = 'back';
-    protected const BACK_SHORT_SLUG = 'b';
-    protected const BACK_LBL = 'Go back';
+    public const BACK_SLUG = 'back';
+    public const BACK_SHORT_SLUG = 'b';
+    public const BACK_LBL = 'Go back';
 
     // Quit choice Values
-    protected const QUIT_SLUG = 'quit';
-    protected const QUIT_SHORT_SLUG = 'q';
-    protected const QUIT_LBL = 'Quit';
+    public const QUIT_SLUG = 'quit';
+    public const QUIT_SHORT_SLUG = 'q';
+    public const QUIT_LBL = 'Quit';
 
     // General Choices
     protected const BASE_CHOICES = [
@@ -28,11 +28,10 @@ abstract class BaseQuestionCommand extends Command
     ];
 
     // generic quite text
-    protected const QUIT_TXT = "Are you sure want to quite?";
+    public const QUIT_TXT = "Are you sure want to quite?";
 
     // generic good bye text
-    protected const GOODBYE_TXT = "Bye! Thank you!";
-
+    public const GOODBYE_TXT = "Bye! Thank you!";
 
     public function handle()
     {
@@ -105,13 +104,21 @@ abstract class BaseQuestionCommand extends Command
     {
         if ($this->confirm(self::QUIT_TXT)) {
             $this->info(self::GOODBYE_TXT);
-            return 1;
+            return 0;
         } else {
             $this->backCommand();
         }
     }
 
-    protected function promptInputWithValidation($title, $label, $limit = 255)
+    /**
+     * Handle Prompt Input from the User
+     *
+     * @param string $title
+     * @param string $label
+     * @param integer $limit
+     * @return string
+     */
+    protected function promptInputWithValidation(string $title, string $label, $limit = 255) :string
     {
         // ask user for the questions
         $val = trim($this->ask($title));

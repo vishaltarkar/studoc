@@ -3,15 +3,19 @@
 namespace App\Console\Commands;
 
 use App\Console\BaseQuestionCommand;
+use Illuminate\Support\Facades\Log;
 
 class PracticeQuestion extends BaseQuestionCommand
 {
-    protected const SUB_MENU_TITLE_TXT = "Please select any one of the option below";
+    public const SUB_MENU_TITLE_TXT = "Please select any one of the option below";
 
-    protected const NEXT_SLUG = "next";
-    protected const NEXT_TXT = "Select new question to answer";
+    public const NEXT_SLUG = "next";
+    public const NEXT_TXT = "Select new question to answer";
 
-    protected const ANS_QUESTION_INSTRUCTION_TXT = "[ Please answer the below question. ]";
+    public const ANS_QUESTION_INSTRUCTION_TXT = "[ Please answer the below question. ]";
+
+    public const SELECT_QUESTION_ID_TXT = 'Select the #Id of the question to answer it';
+    public const ENTER_QUESTION_ANSWER_TXT = 'Please select option from above table as your answer';
 
     protected const SUB_MENU = [
         self::NEXT_SLUG => self::NEXT_TXT
@@ -42,7 +46,13 @@ class PracticeQuestion extends BaseQuestionCommand
     }
 
     protected const PRACTICE_WC_MSG = "Welcome to Practice";
-    protected const PRACTICE_WC_CMNT = "Here is the list of question with result";
+    protected const PRACTICE_WC_CMNT = "Question list with result";
+
+
+    public static function getConstSubMenuTxt() :string
+    {
+        return self::SUB_MENU_TITLE_TXT;
+    }
 
     /**
      * Execute the console command.
@@ -56,10 +66,28 @@ class PracticeQuestion extends BaseQuestionCommand
 
         $this->comment(self::PRACTICE_WC_CMNT);
 
-        $this->questionStatusTable();
+        // get question & result data;
+        $result = \App\Models\Question::getResults();
 
-        parent::handle();
+        if ($result['total'] == 0) {
+            $this->newLine();
+            $this->error("No Question Data. Please create some for practice!");
+            $this->newLine();
+            $this->backCommand();
+        } else if ($result['total'] === $result['correct_count']) {
+            $this->newLine();
+            $this->error("All questions are answered.");
+            $this->newLine();
+            $this->backCommand();
+        } else {
+            $this->questionStatusTable($result);
+            // select the question to answer
+            $question = $this->selectQuestion();
 
+            // get answer and store it in DB
+            $this->answeringQuestion($question);
+            parent::handle();
+        }
     }
 
     /**
@@ -76,30 +104,18 @@ class PracticeQuestion extends BaseQuestionCommand
      *
      * @return void
      */
-    private function questionStatusTable()
+    private function questionStatusTable($result)
     {
         // get result
-        $result = \App\Models\Question::getResults();
-
         $bar = $this->output->createProgressBar($result['total']);
         $bar->advance($result['correct_count']);
         $this->newLine();
-
         // generate table with status
         $this->table(
             ['#', 'Question', 'Status'],
             $result['list']
         );
-
-        $this->newLine();
         $this->info('Completion in percentage ' . $result['correct_perc'] . '%'); // stats
-        $this->newLine();
-
-        // select the question to answer
-        $question = $this->selectQuestion();
-
-        // get answer and store it in DB
-        $this->answeringQuestion($question);
     }
 
     /**
@@ -154,6 +170,7 @@ class PracticeQuestion extends BaseQuestionCommand
             }
             return $question;
         } else {
+            throw new \Exception;
             $this->error('Unknown Question choice.');
             return $this->selectQuestion();
         }
@@ -172,17 +189,17 @@ class PracticeQuestion extends BaseQuestionCommand
             $this->info($question->question);
 
             // display ans options
-            $option_list = $question->options()->select('id', 'option_txt')->get();
+            $option_list = $question->options()->select('option_txt')->get();
+
             $this->table(
-                ['#Id', 'Option'],
+                ['Option'],
                 $option_list,
             );
             $this->newLine(1);
-            $user_answer = $this->promptInputWithValidation("Please select #Id from above options table as answer", 'Answer', 20);
+            $user_answer = $this->promptInputWithValidation(self::ENTER_QUESTION_ANSWER_TXT, 'Answer', 20);
 
             // validate answer text
-            $question_option = $question->options()->find($user_answer);
-            // $question_option = \App\Models\QuestionOption::where('question_id', $que)->where('id', $user_answer);
+            $question_option = $question->options()->where('option_txt', 'like', $user_answer)->first();
             if (!$question_option) {
                 $this->error("Unknown option choice.");
                 return $this->answeringQuestion($question); // retry on invalid entry
@@ -190,7 +207,7 @@ class PracticeQuestion extends BaseQuestionCommand
             $this->newLine(1);
 
             // check answer
-            if ($user_answer == $question->answer_id) {
+            if ($question_option->id == $question->answer_id) {
                 $this->comment('<Correct>');
                 $is_correct = 1;
             } else {
@@ -202,14 +219,14 @@ class PracticeQuestion extends BaseQuestionCommand
             \App\Models\QuestionResult::updateOrCreate([
                 'question_id' => $question->id,
             ], [
-                'answer_id' => $user_answer,
+                'answer_id' => $question_option->id,
                 'is_correct' => $is_correct
             ]);
 
             $this->newLine(1);
         } catch (\Exception $e) {
             $this->error("Something went wrong, Please try again. <<" . $e->getMessage());
-            $this->questionStatusTable();
+            $this->handle();
         }
     }
 }
