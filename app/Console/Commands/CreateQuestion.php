@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Console\BaseQuestionCommand;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Console\BaseQuestionCommand;
 
 class CreateQuestion extends BaseQuestionCommand
 {
@@ -85,7 +86,10 @@ class CreateQuestion extends BaseQuestionCommand
             case self::ADD_QUESTION_SLUG:
                 $question = $this->addQuestion();
                 if ($option_array = $this->addOptions()) {
-                    $this->createQuestionInDatabase($question, $option_array);
+                    $question_created = $this->createQuestionInDatabase($question, $option_array);
+                    if (!$question_created) {
+                        $this->error("Question & Option creation failed.");
+                    }
                 }
                 $this->call('question:create');
                 break;
@@ -140,13 +144,21 @@ class CreateQuestion extends BaseQuestionCommand
      */
     protected function createQuestionInDatabase(string $question, array $options)
     {
-        $ques = \App\Models\Question::create(compact('question'));
-        collect($options)->each(function ($option, $key) use ($ques) {
-            $ques_option = $ques->options()->create(['question_id' => $ques->id, 'option_txt' => $option]);
-            if (!$ques->answer_id) {
-                $ques->update(['answer_id' => $ques_option->id]);
-                $ques->refresh();
-            }
-        });
+        try {
+            DB::beginTransaction();
+            $ques = \App\Models\Question::create(compact('question'));
+            collect($options)->each(function ($option, $key) use ($ques) {
+                $ques_option = $ques->options()->create(['question_id' => $ques->id, 'option_txt' => $option]);
+                if (!$ques->answer_id && $ques_option) {
+                    $ques->update(['answer_id' => $ques_option->id]);
+                    $ques->refresh();
+                }
+            });
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollback();
+            $this->error($e->getMessage());
+        }
     }
 }
