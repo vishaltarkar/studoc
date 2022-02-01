@@ -22,32 +22,24 @@ class QuestionTest extends TestCase
 
 
     /** @test*/
-    public function question_result_method_response_type_is_array()
+    public function question_result_method_response_keys_and_their_type()
     {
         $result = Question::getResults();
         $this->assertIsArray($result, "Question::getResults() method should return an Array");
-    }
 
-    /** @test*/
-    public function question_result_method_response_keys_exist()
-    {
-        $result = Question::getResults();
         $this->assertArrayHasKey('list', $result, "`list` key is missing.");
-        $this->assertArrayHasKey('total', $result, "`total` key is missing.");
-        $this->assertArrayHasKey('correct_count', $result, "`correct_count` key is missing.");
-        $this->assertArrayHasKey('attempt_perc', $result, "`attempt_perc` key is missing.");
-        $this->assertArrayHasKey('correct_perc', $result, "`correct_perc` key is missing.");
-    }
-
-    /** @test*/
-    public function question_result_method_response_array_keys_types_validate()
-    {
-        $result = Question::getResults();
-
         $this->assertTrue($result['list'] instanceof Collection, "`list` should be a collection.");
+
+        $this->assertArrayHasKey('total', $result, "`total` key is missing.");
         $this->assertIsInt($result['total'], "`total` should be an Integer");
+
+        $this->assertArrayHasKey('correct_count', $result, "`correct_count` key is missing.");
         $this->assertIsInt($result['correct_count'], "`correct_count` should be an Integer");
-        $this->assertIsFloat($result['attempt_perc'], "`attempt_perc` should be exist");
-        $this->assertIsFloat($result['correct_perc'], "`correct_perc` should be exist");
+
+        $this->assertArrayHasKey('attempt_perc', $result, "`attempt_perc` key is missing.");
+        $this->assertIsFloat($result['attempt_perc'], "`attempt_perc` should be float");
+
+        $this->assertArrayHasKey('correct_perc', $result, "`correct_perc` key is missing.");
+        $this->assertIsFloat($result['correct_perc'], "`correct_perc` should be float");
     }
 }

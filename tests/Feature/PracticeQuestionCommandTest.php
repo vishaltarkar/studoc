@@ -25,12 +25,39 @@ class PracticeQuestionCommandTest extends TestCase
         BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG,
     ];
 
+    public function test_unknown_question_choice_with_quit()
+    {
+        #arrange
+        $question_data = ['question' => $this->faker->sentence()];
+        $question = Question::create($question_data); // creaet a question
+        $answer = null;
+        for ($i = 0; $i < 3; $i++) {
+            $option = $question->options()->create(['option_txt' => $this->faker->word()]);
+            if ($i === 0) {
+                $answer = $option->option_txt;
+                $question->update(["answer_id" => $option->id]);
+            }
+        }
+        $end_choices = [PracticeQuestion::NEXT_TXT, BaseQuestionCommand::BACK_LBL, BaseQuestionCommand::QUIT_LBL, PracticeQuestion::NEXT_SLUG, BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG];
+
+        #act
+        $cmd = $this->artisan('question:practice');
+        $cmd->expectsQuestion(PracticeQuestion::SELECT_QUESTION_ID_TXT, 999999999);
+        $cmd->expectsOutput(PracticeQuestion::UNKNOWN_QUESTION_CHOICE_TXT);
+        $cmd->expectsConfirmation(PracticeQuestion::EXIT_TO_PREV_MENU_CONFIRM_TXT, 'no');
+        $cmd->expectsChoice(PracticeQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $end_choices);
+        $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
+
+        #assert
+        $cmd->assertExitCode(0);
+    }
+
     /**
-     * A feature to test a practive question answer
+     * A feature to test a practice question with correct answer with quit
      *
      * @test
      */
-    public function practice_a_question_answer_successful()
+    public function practice_question_with_correct_answer_with_quit()
     {
         #arrange
         $question_data = ['question' => $this->faker->sentence()];
@@ -49,8 +76,8 @@ class PracticeQuestionCommandTest extends TestCase
         $cmd = $this->artisan('question:practice');
         $cmd->expectsQuestion(PracticeQuestion::SELECT_QUESTION_ID_TXT, $question->id);
         $cmd->expectsQuestion(PracticeQuestion::ENTER_QUESTION_ANSWER_TXT, $answer);
-
-        $cmd->expectsChoice(PracticeQuestion::getConstSubMenuTxt(), BaseQuestionCommand::QUIT_SLUG, $end_choices);
+        $cmd->expectsOutput('<Correct>');
+        $cmd->expectsChoice(PracticeQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $end_choices);
         $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
 
         #assert
@@ -58,11 +85,72 @@ class PracticeQuestionCommandTest extends TestCase
     }
 
     /**
-     * Feature test where all questions are answered correctly.
+     * A feature to test a practice question with incorrect answer with quit
      *
      * @test
      */
-    public function all_question_are_already_answered()
+    public function practice_question_with_incorrect_answer_with_quit()
+    {
+        #arrange
+        $question_data = ['question' => $this->faker->sentence()];
+        $question = Question::create($question_data); // creaet a question
+        $answer = null;
+        for ($i = 0; $i < 3; $i++) {
+            $option = $question->options()->create(['option_txt' => $this->faker->word()]);
+            if ($i === 0) {
+                $question->update(["answer_id" => $option->id]);
+            }
+            $answer = $option->option_txt;
+        }
+        $end_choices = [PracticeQuestion::NEXT_TXT, BaseQuestionCommand::BACK_LBL, BaseQuestionCommand::QUIT_LBL, PracticeQuestion::NEXT_SLUG, BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG];
+
+        #act
+        $cmd = $this->artisan('question:practice');
+        $cmd->expectsQuestion(PracticeQuestion::SELECT_QUESTION_ID_TXT, $question->id);
+        $cmd->expectsQuestion(PracticeQuestion::ENTER_QUESTION_ANSWER_TXT, $answer);
+        $cmd->expectsOutput('<Incorrect>');
+        $cmd->expectsChoice(PracticeQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $end_choices);
+        $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
+
+        #assert
+        $cmd->assertExitCode(0);
+    }
+
+    /** @test */
+    public function practice_question_with_invalid_answer_with_quit()
+    {
+        #arrange
+        $question_data = ['question' => $this->faker->sentence()];
+        $question = Question::create($question_data); // creaet a question
+        $answer = null;
+        for ($i = 0; $i < 3; $i++) {
+            $option = $question->options()->create(['option_txt' => $this->faker->word()]);
+            if ($i === 0) {
+                $question->update(["answer_id" => $option->id]);
+            }
+            $answer = $option->option_txt;
+        }
+        $end_choices = [PracticeQuestion::NEXT_TXT, BaseQuestionCommand::BACK_LBL, BaseQuestionCommand::QUIT_LBL, PracticeQuestion::NEXT_SLUG, BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG];
+
+        #act
+        $cmd = $this->artisan('question:practice');
+        $cmd->expectsQuestion(PracticeQuestion::SELECT_QUESTION_ID_TXT, $question->id);
+        $cmd->expectsQuestion(PracticeQuestion::ENTER_QUESTION_ANSWER_TXT, "unknown_choice");
+        $cmd->expectsOutput(PracticeQuestion::UNKNOWN_OPTION_CHOICE_TXT);
+        $cmd->expectsConfirmation(PracticeQuestion::EXIT_TO_PREV_MENU_CONFIRM_TXT, 'no');
+        $cmd->expectsChoice(PracticeQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $end_choices);
+        $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
+
+        #assert
+        $cmd->assertExitCode(0);
+    }
+
+    /**
+     * Feature test where all questions are answered already.
+     *
+     * @test
+     */
+    public function all_question_are_already_answered_with_quit()
     {
         #arrange
         $question_data = ['question' => $this->faker->sentence()];
@@ -86,6 +174,7 @@ class PracticeQuestionCommandTest extends TestCase
 
         #act
         $cmd = $this->artisan('question:practice');
+        $cmd->expectsOutput(PracticeQuestion::ALL_QUESTION_ANSWERED_ERR_TXT);
         $cmd->expectsChoice(QuestionDash::MENU_TITLE_TXT, 'quit', $this->main_menu);
         $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
 
@@ -98,9 +187,10 @@ class PracticeQuestionCommandTest extends TestCase
      *
      * @test
      */
-    public function no_question_to_answer()
+    public function no_question_to_answer_with_quit()
     {
         $this->artisan('question:practice')
+            ->expectsOutput(PracticeQuestion::NO_QUESTION_ERR_TXT)
             ->expectsChoice(QuestionDash::MENU_TITLE_TXT, 'quit', $this->main_menu)
             ->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes')
             ->assertExitCode(0);

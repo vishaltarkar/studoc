@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Console\BaseQuestionCommand;
 use App\Console\Commands\CreateQuestion;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
 
 class CreateQuestionCommandTest extends TestCase
 {
@@ -15,7 +15,7 @@ class CreateQuestionCommandTest extends TestCase
     public $choice_list = [
         CreateQuestion::ADD_QUESTION_TXT, BaseQuestionCommand::BACK_LBL,
         BaseQuestionCommand::QUIT_LBL, CreateQuestion::ADD_QUESTION_SLUG,
-        BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG
+        BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG,
     ];
 
     /**
@@ -23,19 +23,21 @@ class CreateQuestionCommandTest extends TestCase
      *
      * @test
      */
-    public function successfully_create_a_question_with_options()
+    public function successfully_create_a_question_with_options_with_quit()
     {
         #arrange
         $dummy_question = $this->faker->sentence();
-        $dummp_options = $this->faker->word(). ",". $this->faker->word(). ",". $this->faker->word();
+        $dummp_options = $this->faker->word() . "," . $this->faker->word() . "," . $this->faker->word();
 
         #act
         $cmd = $this->artisan('question:create');
         $cmd->expectsChoice(CreateQuestion::SUB_MENU_TITLE_TXT, CreateQuestion::ADD_QUESTION_SLUG, $this->choice_list);
         $cmd->expectsQuestion(CreateQuestion::CREATE_QUESTION_TXT, $dummy_question);
         $cmd->expectsQuestion(CreateQuestion::ENTER_OPTION_TXT, $dummp_options);
+        $cmd->expectsOutput(CreateQuestion::QUESTION_ADD_SUCCESS_TXT);
         $cmd->expectsChoice(CreateQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $this->choice_list);
         $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
+        $cmd->expectsOutput(BaseQuestionCommand::GOODBYE_TXT);
 
         #assert
         $cmd->assertExitCode(0);
@@ -64,21 +66,43 @@ class CreateQuestionCommandTest extends TestCase
      *
      * @test
      */
-    public function create_question_with_only_2_option()
+    public function create_question_with_less_than_3_options_with_quit()
     {
         #arrange
         $dummy_question = $this->faker->sentence();
-        $dummp_option = $this->faker->word(). ",". $this->faker->word();
+        $dummp_options = $this->faker->word() . "," . $this->faker->word();
 
         #act
         $cmd = $this->artisan('question:create');
         $cmd->expectsChoice(CreateQuestion::SUB_MENU_TITLE_TXT, CreateQuestion::ADD_QUESTION_SLUG, $this->choice_list);
         $cmd->expectsQuestion(CreateQuestion::CREATE_QUESTION_TXT, $dummy_question);
-        $cmd->expectsQuestion(CreateQuestion::ENTER_OPTION_TXT, $dummp_option);
-        // $cmd->expectsOutput('Invalid Option Entry, Try Again!');
-        $cmd->expectsConfirmation(CreateQuestion::START_OVER_TXT, 'yes');
+        $cmd->expectsQuestion(CreateQuestion::ENTER_OPTION_TXT, $dummp_options);
+        $cmd->expectsOutput(CreateQuestion::INVALID_OPTION_ENTRY);
         $cmd->expectsChoice(CreateQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $this->choice_list);
         $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
+        $cmd->expectsOutput(BaseQuestionCommand::GOODBYE_TXT);
+
+        #assert
+        $cmd->assertExitCode(0);
+    }
+
+    /** @test */
+    public function create_question_with_same_options_with_quit()
+    {
+        #arrange
+        $dummy_question = $this->faker->sentence();
+        $dummp_options = $this->faker->word();
+        $dummp_options .= "," . $dummp_options . "," . $this->faker->word();
+
+        #act
+        $cmd = $this->artisan('question:create');
+        $cmd->expectsChoice(CreateQuestion::SUB_MENU_TITLE_TXT, CreateQuestion::ADD_QUESTION_SLUG, $this->choice_list);
+        $cmd->expectsQuestion(CreateQuestion::CREATE_QUESTION_TXT, $dummy_question);
+        $cmd->expectsQuestion(CreateQuestion::ENTER_OPTION_TXT, $dummp_options);
+        $cmd->expectsOutput(CreateQuestion::UNIQUE_OPTION_ENTRY);
+        $cmd->expectsChoice(CreateQuestion::SUB_MENU_TITLE_TXT, BaseQuestionCommand::QUIT_SLUG, $this->choice_list);
+        $cmd->expectsConfirmation(BaseQuestionCommand::QUIT_TXT, 'yes');
+        $cmd->expectsOutput(BaseQuestionCommand::GOODBYE_TXT);
 
         #assert
         $cmd->assertExitCode(0);

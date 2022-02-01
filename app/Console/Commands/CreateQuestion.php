@@ -22,14 +22,17 @@ class CreateQuestion extends BaseQuestionCommand
     public const ENTER_OPTION_TXT = "Please enter the multiple options separated by ','";
     public const SELECT_CORRECT_OPTION_TXT = "Please select the correct option";
     public const QUESTION_ADD_SUCCESS_TXT = "Question successfully added.";
-    const START_OVER_TXT = "Do you want to start over? Enter `no` to try again.";
+    public const QUESTION_ADD_FAIL_TXT = "Question creation failed.";
+
+    const INVALID_OPTION_ENTRY = "Invalid Option Entry, Try Again!";
+    const UNIQUE_OPTION_ENTRY = "All options should be unique!";
 
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'question:create {action?}';
+    protected $signature = 'question:create';
 
     /**
      * The console command description.
@@ -55,11 +58,7 @@ class CreateQuestion extends BaseQuestionCommand
      */
     public function handle()
     {
-        if ($this->argument('action')) {
-            $this->handleMenuChoices($this->argument('action'));
-        } else {
-            parent::handle();
-        }
+        parent::handle();
     }
 
     /**
@@ -86,10 +85,7 @@ class CreateQuestion extends BaseQuestionCommand
             case self::ADD_QUESTION_SLUG:
                 $question = $this->addQuestion();
                 if ($option_array = $this->addOptions()) {
-                    $question_created = $this->createQuestionInDatabase($question, $option_array);
-                    if (!$question_created) {
-                        $this->error("Question & Option creation failed.");
-                    }
+                    $this->createQuestionInDatabase($question, $option_array);
                 }
                 $this->call('question:create');
                 break;
@@ -123,16 +119,19 @@ class CreateQuestion extends BaseQuestionCommand
 
         $option_array = array_filter($option_array);
 
-        // check if there are not less than
-        if (count($option_array) >= 3) {
-            return $option_array;
-        }
-        $this->info("Invalid Option Entry, Try Again!");
-        if ($this->confirm("Do you want to start over? Enter `no` to try again.")) {
+        //check if array has duplicate Values
+        if (count($option_array) !== count(array_unique($option_array))) {
+            $this->error(self::UNIQUE_OPTION_ENTRY);
             return null;
-        } else {
-            $this->addOptions();
         }
+
+        // check if there are not less than
+        if (count($option_array) <= 2) {
+            $this->error(self::INVALID_OPTION_ENTRY);
+            return null;
+        }
+
+        return $option_array;
     }
 
     /**
@@ -155,10 +154,10 @@ class CreateQuestion extends BaseQuestionCommand
                 }
             });
             DB::commit();
-            return true;
+            $this->info(self::QUESTION_ADD_SUCCESS_TXT);
         } catch (\Exception $e) {
             DB::rollback();
-            $this->error($e->getMessage());
+            $this->error(self::QUESTION_ADD_FAIL_TXT);
         }
     }
 }

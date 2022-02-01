@@ -2,20 +2,32 @@
 
 namespace App\Console\Commands;
 
-use App\Console\BaseQuestionCommand;
+use App\Models\Question;
+use App\Models\QuestionResult;
 use Illuminate\Support\Facades\Log;
+use App\Console\BaseQuestionCommand;
 
 class PracticeQuestion extends BaseQuestionCommand
 {
-    public const SUB_MENU_TITLE_TXT = "Please select any one of the option below";
+    const SUB_MENU_TITLE_TXT = "Please select any one of the option below";
 
-    public const NEXT_SLUG = "next";
-    public const NEXT_TXT = "Select new question to answer";
+    const NEXT_SLUG = "next";
+    const NEXT_TXT = "Select new question to answer";
 
-    public const ANS_QUESTION_INSTRUCTION_TXT = "[ Please answer the below question. ]";
+    const ANS_QUESTION_INSTRUCTION_TXT = "[ Please answer the below question. ]";
 
-    public const SELECT_QUESTION_ID_TXT = 'Select the #Id of the question to answer it';
-    public const ENTER_QUESTION_ANSWER_TXT = 'Please select option from above table as your answer';
+    const SELECT_QUESTION_ID_TXT = 'Select the #Id of the question to answer it';
+    const ENTER_QUESTION_ANSWER_TXT = 'Please select option from above table as your answer';
+
+    const NO_QUESTION_ERR_TXT = "No Question Data. Please create some for practice!";
+    const ALL_QUESTION_ANSWERED_ERR_TXT = "All questions are answered.";
+
+    const QUESTION_IS_ALREADY_ANSWER_TXT = "Question is already answered.";
+
+    const UNKNOWN_QUESTION_CHOICE_TXT = "Unknown Question choice.";
+    const UNKNOWN_OPTION_CHOICE_TXT = "Unknown option choice.";
+
+    const EXIT_TO_PREV_MENU_CONFIRM_TXT = "Enter `yes` to try again? and `no` to go previous menu.";
 
     protected const SUB_MENU = [
         self::NEXT_SLUG => self::NEXT_TXT
@@ -49,11 +61,6 @@ class PracticeQuestion extends BaseQuestionCommand
     protected const PRACTICE_WC_CMNT = "Question list with result";
 
 
-    public static function getConstSubMenuTxt() :string
-    {
-        return self::SUB_MENU_TITLE_TXT;
-    }
-
     /**
      * Execute the console command.
      *
@@ -67,25 +74,21 @@ class PracticeQuestion extends BaseQuestionCommand
         $this->comment(self::PRACTICE_WC_CMNT);
 
         // get question & result data;
-        $result = \App\Models\Question::getResults();
+        $result = Question::getResults();
 
         if ($result['total'] == 0) {
-            $this->newLine();
-            $this->error("No Question Data. Please create some for practice!");
-            $this->newLine();
+            $this->error(self::NO_QUESTION_ERR_TXT);
             $this->backCommand();
         } else if ($result['total'] === $result['correct_count']) {
-            $this->newLine();
-            $this->error("All questions are answered.");
-            $this->newLine();
+            $this->error(self::ALL_QUESTION_ANSWERED_ERR_TXT);
             $this->backCommand();
         } else {
             $this->questionStatusTable($result);
             // select the question to answer
-            $question = $this->selectQuestion();
-
-            // get answer and store it in DB
-            $this->answeringQuestion($question);
+            if ($question = $this->selectQuestion()) {
+                // get answer and store it in DB
+                $this->answeringQuestion($question);
+            }
             parent::handle();
         }
     }
@@ -155,24 +158,26 @@ class PracticeQuestion extends BaseQuestionCommand
     /**
      * Ask user to select id of the question to answer
      *
-     * @return object
+     * @return object|null
      */
     private function selectQuestion()
     {
-        $this->newLine(2);
-        $question_id = $this->promptInputWithValidation("Select the #Id of the question to answer it", 'question_id', 20);
+        $question_id = $this->promptInputWithValidation(self::SELECT_QUESTION_ID_TXT, 'question_id', 20);
 
-        $question = \App\Models\Question::with(['options', 'result'])->find($question_id);
+        $question = Question::with(['options', 'result'])->find($question_id);
         if ($question) {
             if (@$question->result && @$question->result->is_correct === 1) {
-                $this->info('Question is already answered.');
+                $this->info(self::QUESTION_IS_ALREADY_ANSWER_TXT);
                 $question = $this->selectQuestion();
             }
             return $question;
         } else {
-            throw new \Exception;
-            $this->error('Unknown Question choice.');
-            return $this->selectQuestion();
+            $this->error(self::UNKNOWN_QUESTION_CHOICE_TXT);
+            if ($this->confirm(self::EXIT_TO_PREV_MENU_CONFIRM_TXT)) {
+                return $this->selectQuestion();
+            } else {
+                return null;
+            }
         }
     }
 
@@ -201,11 +206,13 @@ class PracticeQuestion extends BaseQuestionCommand
             // validate answer text
             $question_option = $question->options()->where('option_txt', 'like', $user_answer)->first();
             if (!$question_option) {
-                $this->error("Unknown option choice.");
-                return $this->answeringQuestion($question); // retry on invalid entry
+                $this->error(self::UNKNOWN_OPTION_CHOICE_TXT);
+                if ($this->confirm(self::EXIT_TO_PREV_MENU_CONFIRM_TXT)) {
+                    return $this->answeringQuestion($question); // retry on invalid entry
+                } else {
+                    return null;
+                }
             }
-            $this->newLine(1);
-
             // check answer
             if ($question_option->id == $question->answer_id) {
                 $this->comment('<Correct>');
@@ -216,14 +223,12 @@ class PracticeQuestion extends BaseQuestionCommand
             }
 
             // store user answer
-            \App\Models\QuestionResult::updateOrCreate([
+            QuestionResult::updateOrCreate([
                 'question_id' => $question->id,
             ], [
                 'answer_id' => $question_option->id,
                 'is_correct' => $is_correct
             ]);
-
-            $this->newLine(1);
         } catch (\Exception $e) {
             $this->error("Something went wrong, Please try again. <<" . $e->getMessage());
             $this->handle();
