@@ -185,7 +185,7 @@ class PracticeQuestion extends BaseQuestionCommand
      * Check if answer is correct or not and store it in DB
      *
      * @param object $question
-     * @return void
+     * @return void|null
      */
     public function answeringQuestion($question) {
         try {

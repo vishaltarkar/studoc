@@ -25,7 +25,8 @@ class PracticeQuestionCommandTest extends TestCase
         BaseQuestionCommand::BACK_SLUG, BaseQuestionCommand::QUIT_SLUG,
     ];
 
-    public function test_unknown_question_choice_with_quit()
+    /** @test */
+    public function unknown_question_choice_with_quit()
     {
         #arrange
         $question_data = ['question' => $this->faker->sentence()];
